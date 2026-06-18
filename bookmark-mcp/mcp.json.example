@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "bookmark": {
+      "command": "python",
+      "args": ["/Users/sunxiansheng/Mine/www/bookMark-manager/bookmark-mcp/server.py"],
+      "env": {
+        "BOOKMARK_API_BASE": "http://localhost:9001/v1",
+        "LOG_LEVEL": "INFO"
+      }
+    }
+  }
+}
