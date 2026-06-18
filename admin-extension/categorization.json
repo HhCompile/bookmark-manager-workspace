@@ -1,0 +1,85 @@
+{
+  "version": "1.0",
+  "max_depth": 2,
+  "separator": "/",
+  "default_category": "未分类",
+
+  "strategies": {
+    "folder_path":  { "enabled": true, "priority": 0, "description": "浏览器文件夹结构" },
+    "domain":       { "enabled": true, "priority": 1, "description": "域名精确匹配" },
+    "keyword":      { "enabled": true, "priority": 2, "description": "标题/URL 关键字匹配" },
+    "ai":           { "enabled": true, "priority": 3, "description": "AI 智能推荐（最低优先）" }
+  },
+
+  "rules": {
+    "folder_path": {
+      "weight": 1.0,
+      "trust_browser_folders": true,
+      "fallback_to_root": true
+    },
+
+    "domain": {
+      "weight": 0.9,
+      "mappings": {
+        "github.com":           "技术/代码托管",
+        "gitlab.com":           "技术/代码托管",
+        "bitbucket.org":        "技术/代码托管",
+        "stackoverflow.com":    "技术/问答",
+        "segmentfault.com":     "技术/问答",
+        "juejin.cn":            "技术/社区",
+        "csdn.net":             "技术/社区",
+        "zhihu.com":            "资讯/社区",
+        "medium.com":           "资讯/博客",
+        "dev.to":               "资讯/博客",
+        "bilibili.com":         "娱乐/视频",
+        "youtube.com":          "娱乐/视频",
+        "netflix.com":          "娱乐/视频",
+        "spotify.com":          "娱乐/音乐",
+        "taobao.com":           "购物/电商",
+        "jd.com":               "购物/电商",
+        "amazon.com":           "购物/电商",
+        "notion.so":            "工作/笔记",
+        "obsidian.md":          "工作/笔记",
+        "figma.com":            "工作/设计",
+        "dribbble.com":         "工作/设计",
+        "behance.net":          "工作/设计"
+      }
+    },
+
+    "keyword": {
+      "weight": 0.7,
+      "rules": {
+        "技术":   ["github", "stackoverflow", "code", "api", "sdk", "开发", "programming", "tutorial"],
+        "前端":   ["react", "vue", "typescript", "javascript", "css", "html", "webpack", "vite", "tailwind"],
+        "后端":   ["python", "java", "go ", "rust", "node.js", "flask", "django", "spring", "express"],
+        "AI":     ["claude", "gpt", "llm", "embedding", "langchain", "huggingface", "openai", "anthropic"],
+        "前端/React":   ["react hooks", "react router", "react component", "next.js"],
+        "前端/Vue":     ["vue 3", "vue router", "pinia", "nuxt", "vuex"],
+        "后端/Python":  ["flask", "django", "fastapi", "pytest", "celery"],
+        "AI/工具":      ["langchain", "llamaindex", "chromadb", "faiss"],
+        "教程":   ["tutorial", "教程", "入门", "guide", "course", "learn"],
+        "文档":   ["docs", "documentation", "api reference", "文档"],
+        "视频":   ["video", "youtube", "bilibili", "教程视频"],
+        "博客":   ["blog", "博客", "article", "post"]
+      }
+    },
+
+    "ai": {
+      "weight": 0.5,
+      "api_endpoint": "/v1/ai/suggest",
+      "timeout": 10,
+      "fallback": "未分类"
+    }
+  },
+
+  "stats": {
+    "total_categorized": 0,
+    "by_strategy": {
+      "folder_path": 0,
+      "domain": 0,
+      "keyword": 0,
+      "ai": 0,
+      "fallback": 0
+    }
+  }
+}
