@@ -1,0 +1,94 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.history/
+.cache/
+
+# Python（启动脚本运行环境）
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env.python
+
+# Node
+node_modules/
+.pnp
+.pnp.js
+dist/
+*.local
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Backups
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+bookmarks.json.*.backup
+tags.json.*.backup
+
+# AI 工具运行时数据（配置保留，数据不入库）
+.kimi/
+.reasonix/
+.codegraph/
+.playwright-mcp/
+.claude/
+
+# 第三方源码（仅声明引用，不入版本库）
+ui-design-agent/src/
+ui-design-agent/config/
+ui-design-agent/frontend/
+ui-design-agent/docs/
+ui-design-agent/requirements.txt
+
+# 数据 / 临时文件
+uploads/
+*.db
+*.sqlite
+*.sqlite3
+*.tmp
+*.temp
+
+# 测试产物
+coverage/
+htmlcov/
+.pytest_cache/
+playwright-report/
+test-results/
+
+# 本地工作脚本
+local_*.py
+test_*.html
+!OKComputer_Chrome书签整理工具/index.html
+!OKComputer_Chrome书签整理工具/results.html
