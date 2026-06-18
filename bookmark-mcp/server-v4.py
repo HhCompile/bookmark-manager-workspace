@@ -120,9 +120,14 @@ async def delete_bookmark(bookmark_id: str):
 
 
 @mcp.tool()
-async def batch_organize(bookmark_ids: List[str], action: str, params: Optional[Dict] = None):
-    """批量操作"""
-    return await _call_api("POST", "/bookmarks/batch", json_body={"ids": bookmark_ids, "action": action, "params": params or {}})
+async def batch_organize(bookmarks: List[Dict[str, Any]], action: str = "update"):
+    """批量操作（复用 `/v1/bookmarks/batch`）
+
+    Args:
+        bookmarks: 要更新的书签列表，每项含 id + 要改的字段
+        action: 操作类型
+    """
+    return await _call_api("POST", "/bookmarks/batch", json_body={"bookmarks": bookmarks, "action": action})
 
 
 @mcp.tool()
@@ -303,12 +308,17 @@ async def ai_suggest_one(
 
 @mcp.tool()
 async def ai_suggest_batch(
-    bookmark_ids: List[str],
+    bookmark_ids: Optional[List[str]] = None,
     suggest_type: str = "tags",
 ) -> Dict[str, Any]:
-    """批量 AI 建议（复用 `/v1/tags/batch-generate`）"""
+    """批量 AI 建议（复用 `/v1/tags/batch-generate`）
+
+    Args:
+        bookmark_ids: 要生成 tag 的书签 ID 列表（None = 全部未打 tag）
+        suggest_type: 建议类型
+    """
     return await _call_api("POST", "/tags/batch-generate", json_body={
-        "bookmark_ids": bookmark_ids,
+        "ids": bookmark_ids or [],
         "type": suggest_type,
     })
 
