@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分类结果 - 智能书签整理工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        
+        .category-tab {
+            transition: all 0.3s ease;
+        }
+        
+        .category-tab.active {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        .bookmark-card {
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .bookmark-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            transition: all 0.3s ease;
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        .search-input {
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            transform: scale(1.02);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"/>
+                        </svg>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-900">智能书签整理</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-gray-600 hover:text-blue-600 transition-colors">返回首页</a>
+                    <button onclick="exportBookmarks('html')" class="export-btn text-white px-4 py-2 rounded-lg font-medium">
+                        导出书签
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 页面标题 -->
+    <section class="bg-gradient-to-r from-blue-600 to-purple-600 py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl font-bold text-white mb-4 fade-in">书签分类结果</h1>
+            <p class="text-xl text-blue-100 mb-8 fade-in">智能整理，一目了然</p>
+            
+            <!-- 统计卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-12">
+                <div class="glass-effect rounded-xl p-6 text-center text-white fade-in">
+                    <div class="text-3xl font-bold mb-2" id="total-count">0</div>
+                    <div class="text-blue-100">总书签数</div>
+                </div>
+                <div class="glass-effect rounded-xl p-6 text-center text-white fade-in">
+                    <div class="text-3xl font-bold mb-2" id="category-count">0</div>
+                    <div class="text-green-100">分类数量</div>
+                </div>
+                <div class="glass-effect rounded-xl p-6 text-center text-white fade-in">
+                    <div class="text-3xl font-bold mb-2" id="largest-category">-</div>
+                    <div class="text-purple-100">最大分类</div>
+                </div>
+                <div class="glass-effect rounded-xl p-6 text-center text-white fade-in">
+                    <div class="text-3xl font-bold mb-2" id="avg-per-category">0</div>
+                    <div class="text-yellow-100">平均数量</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 搜索和筛选 -->
+    <section class="py-8 bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <!-- 搜索框 -->
+                <div class="flex-1 max-w-md">
+                    <div class="relative">
+                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input type="text" id="search-input" placeholder="搜索书签..." 
+                               class="search-input w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                </div>
+                
+                <!-- 筛选选项 -->
+                <div class="flex items-center space-x-4">
+                    <select id="sort-select" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="title">按标题排序</option>
+                        <option value="domain">按域名排序</option>
+                        <option value="date">按日期排序</option>
+                    </select>
+                    
+                    <div class="flex items-center space-x-2">
+                        <label class="text-sm text-gray-600">显示模式:</label>
+                        <div class="flex bg-gray-100 rounded-lg p-1">
+                            <button id="grid-view" class="px-3 py-1 rounded text-sm bg-blue-600 text-white">网格</button>
+                            <button id="list-view" class="px-3 py-1 rounded text-sm text-gray-600 hover:text-blue-600">列表</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 分类标签 -->
+    <section class="py-8 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div id="category-tabs" class="flex flex-wrap justify-center gap-3 mb-8">
+                <!-- 动态生成分类标签 -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 统计图表 -->
+    <section class="py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- 分类分布饼图 -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">分类分布</h3>
+                    <div id="category-chart" style="height: 300px;"></div>
+                </div>
+                
+                <!-- 域名统计柱状图 -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">热门域名</h3>
+                    <div id="domain-chart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 书签内容 -->
+    <section class="py-12 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- 分类标题 -->
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h2 id="current-category-title" class="text-2xl font-bold text-gray-900">全部分类</h2>
+                    <p id="current-category-count" class="text-gray-600 mt-1">共 0 个书签</p>
+                </div>
+                
+                <!-- 批量操作 -->
+                <div class="flex items-center space-x-3">
+                    <button onclick="selectAllBookmarks()" class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
+                        全选
+                    </button>
+                    <button onclick="deleteSelectedBookmarks()" class="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">
+                        删除选中
+                    </button>
+                </div>
+            </div>
+
+            <!-- 书签网格 -->
+            <div id="bookmarks-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- 动态生成书签卡片 -->
+            </div>
+
+            <!-- 加载更多 -->
+            <div id="load-more-container" class="text-center mt-12 hidden">
+                <button onclick="loadMoreBookmarks()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    加载更多
+                </button>
+            </div>
+
+            <!-- 空状态 -->
+            <div id="empty-state" class="text-center py-16 hidden">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">没有找到书签</h3>
+                <p class="text-gray-600">请尝试其他搜索条件或上传新的书签文件</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 导出选项模态框 -->
+    <div id="export-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">导出书签</h3>
+                <button onclick="closeExportModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <button onclick="exportBookmarks('html')" class="w-full flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <svg class="w-8 h-8 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/>
+                    </svg>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-900">HTML格式</div>
+                        <div class="text-sm text-gray-600">兼容所有浏览器的标准格式</div>
+                    </div>
+                </button>
+                
+                <button onclick="exportBookmarks('json')" class="w-full flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <svg class="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"/>
+                    </svg>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-900">JSON格式</div>
+                        <div class="text-sm text-gray-600">结构化数据，便于程序处理</div>
+                    </div>
+                </button>
+                
+                <button onclick="exportBookmarks('csv')" class="w-full flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <svg class="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 11-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"/>
+                    </svg>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-900">CSV格式</div>
+                        <div class="text-sm text-gray-600">表格格式，适合Excel分析</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="flex items-center justify-center space-x-3 mb-4">
+                <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold">智能书签整理工具</h3>
+            </div>
+            <p class="text-gray-400 mb-4">让每一次浏览都更高效，让每一个细节都更完美</p>
+            <p class="text-gray-500 text-sm">© 2024 智能书签整理工具. 专为提升您的浏览体验而设计</p>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+    <script>
+        // 结果页面特定功能
+        let currentView = 'grid';
+        let currentSort = 'title';
+        let searchQuery = '';
+        let selectedBookmarks = new Set();
+        let displayedBookmarks = [];
+        let currentPage = 1;
+        const bookmarksPerPage = 20;
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeResultsPage();
+            setupResultsEventListeners();
+            loadSampleDataForResults();
+        });
+
+        // 初始化结果页面
+        function initializeResultsPage() {
+            // 页面加载动画
+            anime({
+                targets: '.fade-in',
+                opacity: [0, 1],
+                translateY: [30, 0],
+                delay: anime.stagger(200),
+                duration: 800,
+                easing: 'easeOutQuart'
+            });
+        }
+
+        // 设置事件监听器
+        function setupResultsEventListeners() {
+            // 搜索功能
+            document.getElementById('search-input').addEventListener('input', handleSearch);
+            
+            // 排序功能
+            document.getElementById('sort-select').addEventListener('change', handleSort);
+            
+            // 视图切换
+            document.getElementById('grid-view').addEventListener('click', () => switchView('grid'));
+            document.getElementById('list-view').addEventListener('click', () => switchView('list'));
+        }
+
+        // 为结果页面加载示例数据
+        function loadSampleDataForResults() {
+            const sampleBookmarks = [
+                { id: 1, title: 'GitHub - 代码托管平台', url: 'https://github.com', folder: '开发工具', addDate: '2024-01-15' },
+                { id: 2, title: 'Stack Overflow - 程序员问答社区', url: 'https://stackoverflow.com', folder: '开发工具', addDate: '2024-01-20' },
+                { id: 3, title: 'YouTube - 视频分享平台', url: 'https://youtube.com', folder: '娱乐', addDate: '2024-02-01' },
+                { id: 4, title: 'Netflix - 在线影视平台', url: 'https://netflix.com', folder: '娱乐', addDate: '2024-02-05' },
+                { id: 5, title: 'Amazon - 在线购物商城', url: 'https://amazon.com', folder: '购物', addDate: '2024-02-10' },
+                { id: 6, title: '淘宝 - 网购平台', url: 'https://taobao.com', folder: '购物', addDate: '2024-02-15' },
+                { id: 7, title: 'Facebook - 社交网络', url: 'https://facebook.com', folder: '社交', addDate: '2024-02-20' },
+                { id: 8, title: 'Twitter - 微博客平台', url: 'https://twitter.com', folder: '社交', addDate: '2024-02-25' },
+                { id: 9, title: 'BBC News - 英国广播公司新闻', url: 'https://bbc.com/news', folder: '新闻', addDate: '2024-03-01' },
+                { id: 10, title: 'Coursera - 在线学习平台', url: 'https://coursera.org', folder: '学习', addDate: '2024-03-05' },
+                { id: 11, title: 'Notion - 全能笔记工具', url: 'https://notion.so', folder: '工具', addDate: '2024-03-10' },
+                { id: 12, title: 'Slack - 团队协作工具', url: 'https://slack.com', folder: '工作', addDate: '2024-03-15' },
+                { id: 13, title: 'Google Docs - 在线文档', url: 'https://docs.google.com', folder: '工作', addDate: '2024-03-20' },
+                { id: 14, title: 'Spotify - 音乐流媒体', url: 'https://spotify.com', folder: '娱乐', addDate: '2024-03-25' },
+                { id: 15, title: 'LinkedIn - 职业社交网络', url: 'https://linkedin.com', folder: '社交', addDate: '2024-04-01' },
+                { id: 16, title: 'Reddit - 社交新闻聚合', url: 'https://reddit.com', folder: '社交', addDate: '2024-04-05' },
+                { id: 17, title: 'Steam - 游戏平台', url: 'https://steam.com', folder: '娱乐', addDate: '2024-04-10' },
+                { id: 18, title: 'Medium - 博客平台', url: 'https://medium.com', folder: '新闻', addDate: '2024-04-15' },
+                { id: 19, title: 'Udemy - 在线课程平台', url: 'https://udemy.com', folder: '学习', addDate: '2024-04-20' },
+                { id: 20, title: 'Trello - 项目管理工具', url: 'https://trello.com', folder: '工具', addDate: '2024-04-25' }
+            ];
+
+            bookmarkData = {
+                filename: '示例书签.html',
+                totalBookmarks: sampleBookmarks.length,
+                bookmarks: sampleBookmarks,
+                parseDate: new Date().toISOString()
+            };
+
+            categorizedData = categorizeBookmarks(sampleBookmarks);
+            
+            updateResultsStatistics();
+            showResultsCategoryTabs();
+            renderCategoryCharts();
+            switchResultsCategory(Object.keys(categorizedData)[0]);
+        }
+
+        // 更新结果页面统计信息
+        function updateResultsStatistics() {
+            const totalCount = document.getElementById('total-count');
+            const categoryCount = document.getElementById('category-count');
+            const largestCategory = document.getElementById('largest-category');
+            const avgPerCategory = document.getElementById('avg-per-category');
+
+            // 计算统计数据
+            const total = bookmarkData.totalBookmarks;
+            const categories = Object.keys(categorizedData).length;
+            const largest = Object.entries(categorizedData).reduce((max, [key, cat]) => 
+                cat.bookmarks.length > max.count ? {name: cat.name, count: cat.bookmarks.length} : max, 
+                {name: '', count: 0}
+            );
+            const avg = Math.round(total / categories * 10) / 10;
+
+            // 动画更新数字
+            animateNumber(totalCount, total);
+            animateNumber(categoryCount, categories);
+            largestCategory.textContent = largest.name;
+            animateNumber(avgPerCategory, avg);
+        }
+
+        // 显示结果页面分类标签
+        function showResultsCategoryTabs() {
+            const categoryTabs = document.getElementById('category-tabs');
+            categoryTabs.innerHTML = '';
+
+            // 添加"全部分类"标签
+            const allTab = document.createElement('button');
+            allTab.className = 'category-tab px-6 py-3 rounded-lg font-medium bg-gray-200 text-gray-700 hover:bg-gray-300';
+            allTab.textContent = `全部分类 (${bookmarkData.totalBookmarks})`;
+            allTab.onclick = () => switchResultsCategory('all');
+            categoryTabs.appendChild(allTab);
+
+            // 添加各个分类标签
+            Object.entries(categorizedData).forEach(([key, category], index) => {
+                const tab = document.createElement('button');
+                tab.className = `category-tab px-6 py-3 rounded-lg font-medium bg-gray-200 text-gray-700 hover:bg-gray-300`;
+                tab.textContent = `${category.name} (${category.bookmarks.length})`;
+                tab.onclick = () => switchResultsCategory(key);
+                categoryTabs.appendChild(tab);
+            });
+
+            // 默认选中第一个标签
+            categoryTabs.children[0].classList.add('active');
+        }
+
+        // 切换结果页面分类
+        function switchResultsCategory(categoryKey) {
+            currentCategory = categoryKey;
+            currentPage = 1;
+            
+            // 更新标签状态
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // 获取当前分类的书签
+            let bookmarks = [];
+            if (categoryKey === 'all') {
+                bookmarks = bookmarkData.bookmarks;
+                document.getElementById('current-category-title').textContent = '全部分类';
+            } else {
+                bookmarks = categorizedData[categoryKey].bookmarks;
+                document.getElementById('current-category-title').textContent = categorizedData[categoryKey].name;
+            }
+
+            document.getElementById('current-category-count').textContent = `共 ${bookmarks.length} 个书签`;
+            
+            // 应用搜索和排序
+            displayedBookmarks = filterAndSortBookmarks(bookmarks);
+            
+            // 渲染书签
+            renderBookmarks();
+        }
+
+        // 过滤和排序书签
+        function filterAndSortBookmarks(bookmarks) {
+            let filtered = bookmarks;
+
+            // 搜索过滤
+            if (searchQuery) {
+                filtered = filtered.filter(bookmark => 
+                    bookmark.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    bookmark.url.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+            }
+
+            // 排序
+            filtered.sort((a, b) => {
+                switch (currentSort) {
+                    case 'title':
+                        return a.title.localeCompare(b.title);
+                    case 'domain':
+                        return new URL(a.url).hostname.localeCompare(new URL(b.url).hostname);
+                    case 'date':
+                        return new Date(b.addDate) - new Date(a.addDate);
+                    default:
+                        return 0;
+                }
+            });
+
+            return filtered;
+        }
+
+        // 渲染书签
+        function renderBookmarks() {
+            const bookmarksGrid = document.getElementById('bookmarks-grid');
+            const emptyState = document.getElementById('empty-state');
+            const loadMoreContainer = document.getElementById('load-more-container');
+
+            if (displayedBookmarks.length === 0) {
+                bookmarksGrid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                loadMoreContainer.classList.add('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            // 分页显示
+            const startIndex = (currentPage - 1) * bookmarksPerPage;
+            const endIndex = startIndex + bookmarksPerPage;
+            const bookmarksToShow = displayedBookmarks.slice(0, endIndex);
+
+            // 清空网格
+            bookmarksGrid.innerHTML = '';
+
+            // 渲染书签卡片
+            bookmarksToShow.forEach((bookmark, index) => {
+                const card = createDetailedBookmarkCard(bookmark, index);
+                bookmarksGrid.appendChild(card);
+            });
+
+            // 显示/隐藏加载更多按钮
+            if (endIndex < displayedBookmarks.length) {
+                loadMoreContainer.classList.remove('hidden');
+            } else {
+                loadMoreContainer.classList.add('hidden');
+            }
+
+            // 动画效果
+            anime({
+                targets: '.bookmark-card',
+                scale: [0.8, 1],
+                opacity: [0, 1],
+                delay: anime.stagger(50),
+                duration: 400,
+                easing: 'easeOutBack'
+            });
+        }
+
+        // 创建详细书签卡片
+        function createDetailedBookmarkCard(bookmark, index) {
+            const card = document.createElement('div');
+            card.className = 'bookmark-card bg-white rounded-xl p-6 shadow-sm border border-gray-100 relative';
+            
+            const favicon = getFaviconUrl(bookmark.url);
+            const domain = new URL(bookmark.url).hostname;
+            const category = getBookmarkCategory(bookmark);
+            
+            card.innerHTML = `
+                <div class="flex items-start justify-between mb-4">
+                    <input type="checkbox" class="bookmark-checkbox" data-id="${bookmark.id}" 
+                           onchange="toggleBookmarkSelection(${bookmark.id})"
+                           ${selectedBookmarks.has(bookmark.id) ? 'checked' : ''}>
+                    <div class="flex items-center space-x-2">
+                        <span class="inline-block w-3 h-3 rounded-full" style="background-color: ${category.color}"></span>
+                        <span class="text-xs text-gray-500">${category.name}</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-start space-x-3">
+                    <img src="${favicon}" alt="" class="w-10 h-10 rounded-lg" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCA5QzE2LjY4NjMgOSAxNCAxMS42ODYzIDE0IDE1QzE0IDE4LjMxMzcgMTYuNjg2MyAyMSAyMCAyMUMyMy4zMTM3IDIxIDI2IDE4LjMxMzcgMjYgMTVDMjYgMTEuNjg2MyAyMy4zMTM3IDkgMjAgOVpNMjAgMTlDMTcuNzkwOSAxOSAxNiAxNy4yMDkxIDE2IDE1QzE2IDEyLjc5MDkgMTcuNzkwOSAxMSAyMCAxMUMyMi4yMDkxIDExIDI0IDEyLjc5MDkgMjQgMTVDMjQgMTcuMjA5MSAyMi4yMDkxIDE5IDIwIDE5WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K'">
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-semibold text-gray-900 mb-1 truncate" title="${bookmark.title}">${bookmark.title}</h3>
+                        <p class="text-sm text-gray-500 mb-2">${domain}</p>
+                        <div class="flex items-center justify-between text-xs text-gray-400">
+                            <span>${bookmark.folder}</span>
+                            <span>${formatDate(bookmark.addDate)}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                    <a href="${bookmark.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        访问链接
+                    </a>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="editBookmark(${bookmark.id})" class="text-gray-400 hover:text-blue-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </button>
+                        <button onclick="deleteBookmark(${bookmark.id})" class="text-gray-400 hover:text-red-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // 获取书签分类信息
+        function getBookmarkCategory(bookmark) {
+            for (const [key, category] of Object.entries(categorizedData)) {
+                if (category.bookmarks.some(b => b.id === bookmark.id)) {
+                    return {
+                        name: category.name,
+                        color: getCategoryColor(key)
+                    };
+                }
+            }
+            return { name: '未分类', color: '#6b7280' };
+        }
+
+        // 格式化日期
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN');
+        }
+
+        // 处理搜索
+        function handleSearch(e) {
+            searchQuery = e.target.value;
+            currentPage = 1;
+            
+            // 重新获取当前分类的书签
+            let bookmarks = [];
+            if (currentCategory === 'all') {
+                bookmarks = bookmarkData.bookmarks;
+            } else {
+                bookmarks = categorizedData[currentCategory].bookmarks;
+            }
+            
+            displayedBookmarks = filterAndSortBookmarks(bookmarks);
+            renderBookmarks();
+        }
+
+        // 处理排序
+        function handleSort(e) {
+            currentSort = e.target.value;
+            currentPage = 1;
+            
+            // 重新获取当前分类的书签
+            let bookmarks = [];
+            if (currentCategory === 'all') {
+                bookmarks = bookmarkData.bookmarks;
+            } else {
+                bookmarks = categorizedData[currentCategory].bookmarks;
+            }
+            
+            displayedBookmarks = filterAndSortBookmarks(bookmarks);
+            renderBookmarks();
+        }
+
+        // 切换视图
+        function switchView(view) {
+            currentView = view;
+            const gridBtn = document.getElementById('grid-view');
+            const listBtn = document.getElementById('list-view');
+            
+            if (view === 'grid') {
+                gridBtn.className = 'px-3 py-1 rounded text-sm bg-blue-600 text-white';
+                listBtn.className = 'px-3 py-1 rounded text-sm text-gray-600 hover:text-blue-600';
+                document.getElementById('bookmarks-grid').className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6';
+            } else {
+                listBtn.className = 'px-3 py-1 rounded text-sm bg-blue-600 text-white';
+                gridBtn.className = 'px-3 py-1 rounded text-sm text-gray-600 hover:text-blue-600';
+                document.getElementById('bookmarks-grid').className = 'grid grid-cols-1 gap-4';
+            }
+            
+            renderBookmarks();
+        }
+
+        // 加载更多书签
+        function loadMoreBookmarks() {
+            currentPage++;
+            renderBookmarks();
+        }
+
+        // 切换书签选择状态
+        function toggleBookmarkSelection(bookmarkId) {
+            if (selectedBookmarks.has(bookmarkId)) {
+                selectedBookmarks.delete(bookmarkId);
+            } else {
+                selectedBookmarks.add(bookmarkId);
+            }
+        }
+
+        // 全选书签
+        function selectAllBookmarks() {
+            const checkboxes = document.querySelectorAll('.bookmark-checkbox');
+            const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach(checkbox => {
+                const bookmarkId = parseInt(checkbox.dataset.id);
+                if (allSelected) {
+                    checkbox.checked = false;
+                    selectedBookmarks.delete(bookmarkId);
+                } else {
+                    checkbox.checked = true;
+                    selectedBookmarks.add(bookmarkId);
+                }
+            });
+        }
+
+        // 删除选中的书签
+        function deleteSelectedBookmarks() {
+            if (selectedBookmarks.size === 0) {
+                showNotification('请先选择要删除的书签', 'warning');
+                return;
+            }
+            
+            if (confirm(`确定要删除选中的 ${selectedBookmarks.size} 个书签吗？`)) {
+                // 从数据中删除选中的书签
+                bookmarkData.bookmarks = bookmarkData.bookmarks.filter(b => !selectedBookmarks.has(b.id));
+                
+                // 重新分类
+                Object.keys(categorizedData).forEach(key => {
+                    categorizedData[key].bookmarks = categorizedData[key].bookmarks.filter(b => !selectedBookmarks.has(b.id));
+                });
+                
+                // 清空选中状态
+                selectedBookmarks.clear();
+                
+                // 更新显示
+                updateResultsStatistics();
+                showResultsCategoryTabs();
+                switchResultsCategory(currentCategory);
+                renderCategoryCharts();
+                
+                showNotification('书签删除成功', 'success');
+            }
+        }
+
+        // 编辑书签
+        function editBookmark(bookmarkId) {
+            showNotification('编辑功能即将推出', 'info');
+        }
+
+        // 删除单个书签
+        function deleteBookmark(bookmarkId) {
+            if (confirm('确定要删除这个书签吗？')) {
+                // 从数据中删除书签
+                bookmarkData.bookmarks = bookmarkData.bookmarks.filter(b => b.id !== bookmarkId);
+                
+                // 从分类中删除
+                Object.keys(categorizedData).forEach(key => {
+                    categorizedData[key].bookmarks = categorizedData[key].bookmarks.filter(b => b.id !== bookmarkId);
+                });
+                
+                // 更新显示
+                updateResultsStatistics();
+                showResultsCategoryTabs();
+                switchResultsCategory(currentCategory);
+                renderCategoryCharts();
+                
+                showNotification('书签删除成功', 'success');
+            }
+        }
+
+        // 渲染分类图表
+        function renderCategoryCharts() {
+            renderCategoryPieChart();
+            renderDomainBarChart();
+        }
+
+        // 渲染分类饼图
+        function renderCategoryPieChart() {
+            const chart = echarts.init(document.getElementById('category-chart'));
+            
+            const data = Object.entries(categorizedData).map(([key, category]) => ({
+                name: category.name,
+                value: category.bookmarks.length,
+                itemStyle: { color: getCategoryColor(key) }
+            }));
+
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b}: {c} ({d}%)'
+                },
+                series: [{
+                    name: '书签分类',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    avoidLabelOverlap: false,
+                    label: {
+                        show: false,
+                        position: 'center'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: '18',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    data: data
+                }]
+            };
+
+            chart.setOption(option);
+        }
+
+        // 渲染域名柱状图
+        function renderDomainBarChart() {
+            const chart = echarts.init(document.getElementById('domain-chart'));
+            
+            // 统计域名
+            const domainCount = {};
+            bookmarkData.bookmarks.forEach(bookmark => {
+                const domain = new URL(bookmark.url).hostname;
+                domainCount[domain] = (domainCount[domain] || 0) + 1;
+            });
+
+            // 取前10个域名
+            const topDomains = Object.entries(domainCount)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    data: topDomains.map(item => item[0]),
+                    axisLabel: {
+                        rotate: 45
+                    }
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [{
+                    name: '书签数量',
+                    type: 'bar',
+                    data: topDomains.map(item => item[1]),
+                    itemStyle: {
+                        color: '#3b82f6'
+                    }
+                }]
+            };
+
+            chart.setOption(option);
+        }
+
+        // 打开导出模态框
+        function openExportModal() {
+            document.getElementById('export-modal').classList.remove('hidden');
+        }
+
+        // 关闭导出模态框
+        function closeExportModal() {
+            document.getElementById('export-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
